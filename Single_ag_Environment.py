@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
+# In[1]:
 
 
 #This notebook will serve as a baseline with the regular
@@ -11,7 +11,7 @@
 #environment rather than the more complex MARL environment
 
 
-# In[12]:
+# In[8]:
 
 
 import gymnasium as gym
@@ -22,7 +22,7 @@ from gymnasium import spaces
 import random
 
 
-# In[16]:
+# In[15]:
 
 
 #Setup environment
@@ -69,25 +69,30 @@ class SingleSatelliteEnv(gym.Env):
         super().reset(seed=seed)
         self.timestep=0
         self.contact_plan=self.np_random.uniform(low=0.0, high=1.0, size=(10,)).astype(np.float32)
+        self.contact_plan= np.round(self.contact_plan*10)/10
         self.satellite_remaining_data=np.array(
         [self.np_random.integers(5, 100) / 100.0], dtype=np.float32
     )
         self.delivered_data=0
         self.initial_data_volume=self.satellite_remaining_data
-        
+        self.Energy_Expended=0
         observation = self._get_obs()
         info = self._get_info()
         for k, v in observation.items():
             print(f"{k}: shape={v.shape}, dtype={v.dtype}")
             print(f"Contained in space? {self.observation_space[k].contains(v)}")
         return observation, info
-    def updateDeliveryandEnergy(self,weather,length):
+    def updateDeliveryandEnergy(self,weather,length,remaining_data):
         delivered_packets=0
         excess_energy_expended=0
+        random_sample=self.np_random.uniform(low=0.0, high=1.0, size=(10,)).astype(np.float32)
         for i in range(length-1):
-            random_sample=self.np_random.uniform(low=0.0, high=1.0, size=(10,)).astype(np.float32)
-            if random_sample> weather:
-                delivered_packets=delivered_packets+1
+            if remaining_data>0:
+                if random_sample[i]> weather:
+                    delivered_packets=delivered_packets+1
+                    remaining_data=remaining_data-1
+                else:
+                    excess_energy_expended=excess_energy_expended+1
             else:
                 excess_energy_expended=excess_energy_expended+1
         
@@ -106,26 +111,38 @@ class SingleSatelliteEnv(gym.Env):
         else:
             print(self.timestep)
             print(self.contact_plan[self.timestep])
-            current_delivered_data,current_energy_expenditure=self.updateDeliveryandEnergy(self.contact_plan[self.timestep],10)
+            current_delivered_data,current_energy_expenditure=self.updateDeliveryandEnergy(self.contact_plan[self.timestep],10,self.satellite_remaining_data*100)
             #Use link availability model to update the environment state
 
             if current_delivered_data>0:
                 reward=(10/(self.initial_data_volume*100))*current_delivered_data-5/(100*self.initial_data_volume)*current_delivered_data*(current_energy_expenditure/(current_energy_expenditure+10))
             else:
                 reward=-(5*current_energy_expenditure)/(self.initial_data_volume*100)
-            self.delivered_data=self.delivered_data+current_delivered
+            print("Current Delivered Data")
+            print(current_delivered_data)
+            print(current_energy_expenditure)
+            print("Initial Remaining Data")
+            print((self.satellite_remaining_data)*100)
+            self.delivered_data=self.delivered_data+current_delivered_data
             self.Energy_Expended=self.Energy_Expended+current_energy_expenditure
-            self.satellite_remaining_data=self.satellite_remaining_data-current_delivered_data
-            
+            self.satellite_remaining_data=(self.satellite_remaining_data)*100-current_delivered_data
+            self.satellite_remaining_data=self.satellite_remaining_data/100
+            print("remaining data")
+            print((self.satellite_remaining_data)*100)
         self.updateTimestep()
         terminated=False
         truncated=False
         if self.timestep>=10:
             terminated=True
+            #Episode Reward
+            reward=reward+10*(self.delivered_data/self.initial_data_volume)-5*(self.Energy_Expended/100)
         else:
             terminated=False
-        if self.satellite_remaining_data==0:
+            
+        if self.satellite_remaining_data<=0:
             truncated=True
+            #Episode Reward
+            reward=reward+10+(self.Energy_Expended/(10*(self.timestep-1)))*5
         else:
             truncated=False
         observation = self._get_obs()
