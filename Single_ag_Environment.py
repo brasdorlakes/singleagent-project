@@ -11,7 +11,7 @@
 #environment rather than the more complex MARL environment
 
 
-# In[8]:
+# In[1]:
 
 
 import gymnasium as gym
@@ -22,7 +22,7 @@ from gymnasium import spaces
 import random
 
 
-# In[15]:
+# In[2]:
 
 
 #Setup environment
@@ -142,7 +142,7 @@ class SingleSatelliteEnv(gym.Env):
         if self.satellite_remaining_data<=0:
             truncated=True
             #Episode Reward
-            reward=reward+10+(self.Energy_Expended/(10*(self.timestep-1)))*5
+            reward=reward+10-(self.Energy_Expended/(10*(self.timestep)))*5
         else:
             truncated=False
         observation = self._get_obs()
