@@ -116,8 +116,12 @@ class SingleSatelliteEnv(gym.Env):
 
             if current_delivered_data>0:
                 reward=(10/(self.initial_data_volume*100))*current_delivered_data-5/(100*self.initial_data_volume)*current_delivered_data*(current_energy_expenditure/(current_energy_expenditure+10))
+                #print("Step Reward 1")
+                #print(reward)
             else:
                 reward=-(5*current_energy_expenditure)/(self.initial_data_volume*100)
+                #print("Step Reward 2")
+                #print(reward)
             #print("Current Delivered Data")
             #print(current_delivered_data)
             #print(current_energy_expenditure)
@@ -135,7 +139,13 @@ class SingleSatelliteEnv(gym.Env):
         if self.timestep>=10:
             terminated=True
             #Episode Reward
-            reward=reward+10*(self.delivered_data/self.initial_data_volume)-5*(self.Energy_Expended/100)
+            #print("Delivered Data")
+            #print(self.delivered_data)
+            #print("Initial Data volume")
+            #print(self.initial_data_volume)
+            reward=reward+10*(self.delivered_data/(self.initial_data_volume*100))-5*(self.Energy_Expended/100)
+            #print("Episode Reward 1")
+            #print(reward)
         else:
             terminated=False
             
@@ -143,11 +153,16 @@ class SingleSatelliteEnv(gym.Env):
             truncated=True
             #Episode Reward
             reward=reward+10-(self.Energy_Expended/(10*(self.timestep)))*5
+            #print("Episode Reward 2")
+            #print(reward)
         else:
             truncated=False
         observation = self._get_obs()
         info = self._get_info()
-        
+        #print("Remaining_data")
+        #print(self.satellite_remaining_data)
+        #print("Step Reward")
+        #print(reward)
         return observation, reward, terminated, truncated, info
     def _get_info(self):
         """"
