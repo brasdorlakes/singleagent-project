@@ -78,9 +78,9 @@ class SingleSatelliteEnv(gym.Env):
         self.Energy_Expended=0
         observation = self._get_obs()
         info = self._get_info()
-        for k, v in observation.items():
-            print(f"{k}: shape={v.shape}, dtype={v.dtype}")
-            print(f"Contained in space? {self.observation_space[k].contains(v)}")
+        #for k, v in observation.items():
+            #print(f"{k}: shape={v.shape}, dtype={v.dtype}")
+            #print(f"Contained in space? {self.observation_space[k].contains(v)}")
         return observation, info
     def updateDeliveryandEnergy(self,weather,length,remaining_data):
         delivered_packets=0
@@ -109,8 +109,8 @@ class SingleSatelliteEnv(gym.Env):
         if action==0:
             reward=0
         else:
-            print(self.timestep)
-            print(self.contact_plan[self.timestep])
+            #print(self.timestep)
+            #print(self.contact_plan[self.timestep])
             current_delivered_data,current_energy_expenditure=self.updateDeliveryandEnergy(self.contact_plan[self.timestep],10,self.satellite_remaining_data*100)
             #Use link availability model to update the environment state
 
@@ -118,17 +118,17 @@ class SingleSatelliteEnv(gym.Env):
                 reward=(10/(self.initial_data_volume*100))*current_delivered_data-5/(100*self.initial_data_volume)*current_delivered_data*(current_energy_expenditure/(current_energy_expenditure+10))
             else:
                 reward=-(5*current_energy_expenditure)/(self.initial_data_volume*100)
-            print("Current Delivered Data")
-            print(current_delivered_data)
-            print(current_energy_expenditure)
-            print("Initial Remaining Data")
-            print((self.satellite_remaining_data)*100)
+            #print("Current Delivered Data")
+            #print(current_delivered_data)
+            #print(current_energy_expenditure)
+            #print("Initial Remaining Data")
+            #print((self.satellite_remaining_data)*100)
             self.delivered_data=self.delivered_data+current_delivered_data
             self.Energy_Expended=self.Energy_Expended+current_energy_expenditure
             self.satellite_remaining_data=(self.satellite_remaining_data)*100-current_delivered_data
             self.satellite_remaining_data=self.satellite_remaining_data/100
-            print("remaining data")
-            print((self.satellite_remaining_data)*100)
+            #print("remaining data")
+            #print((self.satellite_remaining_data)*100)
         self.updateTimestep()
         terminated=False
         truncated=False
