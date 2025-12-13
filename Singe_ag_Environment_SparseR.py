@@ -23,14 +23,20 @@ import random
 from gymnasium.utils import seeding
 
 
-# In[2]:
+# In[4]:
 
 
 #This environment gives us insight into the basic stochastic knapsack problem that we need to solve in the multi-agent environment
 #Basically it is the same problem as the multi-agent environment without the complexities of fairness and collisions
 class SingleSatelliteEnvSR(gym.Env):
-
-    def __init__(self,render_mode="None"):
+    metadata = {
+        "render_modes": ["rgb_array"],  # or ["human", "rgb_array"]
+        "render_fps": 30
+    }
+    def __init__(self,render_mode="rgb_array"):
+        print("DEBUG: SingleSatelliteEnvSR __init__ called")
+        print("DEBUG metadata:", self.metadata)
+        self.render_mode = render_mode
         self.np_random = np.random.default_rng()
         self.timestep=None#Current contact that we are using (indicates wher we are in the contact plan
         #Contact plan in this case only contains weather condition information (as we assume all equal contact lengths)
@@ -93,8 +99,10 @@ class SingleSatelliteEnvSR(gym.Env):
             #if we do deliver some data during the contact, reward will always be positive
             self.delivered_data=self.delivered_data+current_delivered_data#We update the number of delivered packets
             self.Energy_Expended=self.Energy_Expended+current_energy_expenditure#We update the amount of enegy expended
-            self.satellite_remaining_data=(self.satellite_remaining_data)*100-current_delivered_data#Update the remaining data
+            self.satellite_remaining_data=np.round((self.satellite_remaining_data)*100)-np.round(current_delivered_data)#Update the remaining data
             self.satellite_remaining_data=self.satellite_remaining_data/100
+            if self.satellite_remaining_data<0:
+                self.satellite_remaining_data=0
         self.updateTimestep()#Update timestep
         terminated=False
         truncated=False
@@ -121,12 +129,13 @@ class SingleSatelliteEnvSR(gym.Env):
         else:
             reward=0
         observation = self._get_obs()
+        #print(observation)
         info = self._get_info()
         reward=float(reward)
         #print(reward)
         return observation, reward, terminated, truncated, info
     def _get_info(self):
-      
+        
         return {"contact plan":self.contact_plan, "Remaining data":self.satellite_remaining_data,"current timestep":self.timestep,"Energy Expended":self.Energy_Expended,"Delivered Data":self.delivered_data,"Initial Data":self.initial_data_volume,"Number of Contacts":self.num_of_contacts}
         #Info is structured as a dictionary to ease usability during graphing and analysis
     def _get_obs(self):
@@ -135,6 +144,10 @@ class SingleSatelliteEnvSR(gym.Env):
         np.array([self.satellite_remaining_data], dtype=np.float32),
         np.array([self.timestep], dtype=np.float32)
     ])
+    def render(self):
+        if self.render_mode == "rgb_array":
+            frame = np.zeros((480, 640, 3), dtype=np.uint8)
+            return frame
         #Observation get function, also structures observations properly as a 12 element vector
     def updateTimestep(self):
         self.timestep=self.timestep+1
@@ -159,7 +172,7 @@ class SingleSatelliteEnvSR(gym.Env):
 #Next need to produce training graphs and compare between pre-existing agents
 from gymnasium.envs.registration import register
 register(
-    id="SingleSatelliteEnvSR",
+    id="SingleSatelliteEnvSR-v1",
     entry_point="Singe_ag_Environment_SparseR:SingleSatelliteEnvSR",  # Adjust the module path
 )
 
